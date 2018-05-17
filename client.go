@@ -35,7 +35,7 @@ type Client struct {
 	DebugWriter Writer
 	ErrorWriter Writer
 	InfoWriter  Writer
-	PrivateKey  ssh.Signer
+	PrivateKey  string
 }
 
 func (c *Client) Password(user string) (password string, e error) {
@@ -70,6 +70,10 @@ func (client *Client) Attach() error {
 
 func (c *Client) SetPassword(password string) {
 	c.password = password
+}
+
+func (c *Client) SetPrivateKey(privateKey string) {
+	c.PrivateKey = privateKey
 }
 
 func (c *Client) Connection() (*ssh.Client, error) {
@@ -111,12 +115,14 @@ func (c *Client) Connect() (err error) {
 		}
 	}
 
-	if c.PrivateKey != nil {
-		keys = append(keys, c.PrivateKey)
-	}
-
-	if pk, err := readPrivateKey(os.ExpandEnv("$HOME/.ssh/id_rsa")); err == nil {
-		keys = append(keys, pk)
+	if len(c.PrivateKey) != 0 {
+		if pk, err := readPrivateKey(c.PrivateKey); err == nil {
+			keys = append(keys, pk)
+		}
+	} else {
+		if pk, err := readPrivateKey(os.ExpandEnv("$HOME/.ssh/id_rsa")); err == nil {
+			keys = append(keys, pk)
+		}
 	}
 
 	if len(keys) > 0 {
